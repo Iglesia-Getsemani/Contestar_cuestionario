@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-inline' 'unsafe-eval';
+                 style-src 'self' 'unsafe-inline';
+                 media-src *;
+                 img-src 'self' data: content: https:;
+                 connect-src *;">
+  <title>Cuestionarios App</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="screen">
+    <header class="app-bar">
+      <div class="app-bar__title">Cuestionarios App</div>
+    </header>
+
+    <main class="content">
+
+      <!-- ── URL del servidor + botón QR ─────────────────────────── -->
+      <div class="field">
+        <label for="server-url">URL del Servidor</label>
+        <div class="input-row">
+          <input id="server-url" class="input" type="url" inputmode="url" autocorrect="off"
+                 autocapitalize="off" placeholder="http://192.168.1.XXX:3000">
+          <button id="btn-scan-qr" class="input-icon-btn" title="Escanear QR">&#128247;</button>
+        </div>
+      </div>
+
+      <!-- ── Usuario seleccionado (ya no se escribe, se elige) ─────── -->
+      <div class="field">
+        <label for="user-name">Nombre de Usuario</label>
+        <div class="input-row">
+          <input id="user-name" class="input" type="text" readonly
+                 placeholder="Toca para seleccionar un usuario">
+          <button id="btn-select-user" type="button" class="input-icon-btn" title="Seleccionar usuario">&#128100;</button>
+        </div>
+      </div>
+
+      <!-- ── Acciones principales ─────────────────────────────────── -->
+      <button id="btn-connect" class="btn btn--accent">&#128257;&nbsp; Conectar y Cargar Cuestionarios</button>
+      <button id="btn-local-questionnaires" class="btn btn--primary">&#128194;&nbsp; Contestar Cuestionario Local</button>
+      <button id="btn-manage-answers" class="btn btn--warning">&#128228;&nbsp; Gestionar Respuestas Locales</button>
+      <button id="btn-directory" class="btn btn--neutral">&#128203;&nbsp; Directorio</button>
+
+      <!-- ── Estado ───────────────────────────────────────────────── -->
+      <div id="status-container" class="mt-4"></div>
+
+      <!-- ── Listas dinámicas ─────────────────────────────────────── -->
+      <div id="server-questionnaires-list"></div>
+      <div id="local-answers-list"></div>
+
+    </main>
+  </div>
+
+  <!-- ── Modal: seleccionar usuario ───────────────────────────────── -->
+  <div class="usersel-overlay" id="usersel-modal">
+    <div class="usersel-modal">
+      <div class="usersel-modal__header">
+        <h3>Seleccionar usuario</h3>
+        <button type="button" id="usersel-close" class="usersel-close" title="Cerrar">&times;</button>
+      </div>
+      <input type="text" id="usersel-search" class="input" placeholder="Buscar por nombre o código…">
+      <div class="usersel-list" id="usersel-list"></div>
+      <div class="usersel-empty" id="usersel-empty">
+        <p>Todavía no hay usuarios creados.</p>
+        <button type="button" id="usersel-goto-users" class="btn btn--neutral">&#128203;&nbsp; Ir a Usuarios</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .usersel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+    .usersel-overlay.open{display:flex;}
+    .usersel-modal{background:#fff;border-radius:14px;padding:1.25rem;width:100%;max-width:380px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+    .usersel-modal__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}
+    .usersel-modal__header h3{font-size:1.05rem;font-weight:600;color:#1a1a2e;}
+    .usersel-close{border:none;background:transparent;font-size:1.4rem;line-height:1;cursor:pointer;color:#6b7280;}
+    #usersel-search{margin-bottom:.75rem;}
+    .usersel-list{overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;}
+    .usersel-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:.6rem .8rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;font:inherit;}
+    .usersel-item:hover{background:#f3f4f6;}
+    .usersel-item--active{border-color:#4f46e5;background:#eef2ff;}
+    .usersel-item-name{font-weight:600;color:#1a1a2e;}
+    .usersel-item-code{font-size:.78rem;color:#6b7280;font-family:'Courier New',monospace;}
+    .usersel-empty{display:none;text-align:center;color:#9ca3af;padding:1.5rem .5rem .5rem;}
+    .usersel-empty p{margin-bottom:.75rem;font-size:.9rem;}
+  </style>
+
+  <!-- ── Núcleo ─────────────────────────────────────────────────────── -->
+  <script src="js/core/utils.js"></script>
+  <script src="js/core/ui.js"></script>
+  <script src="js/core/storage.js"></script>
+  <script src="js/core/permissions.js"></script>
+  <script src="js/core/api.js"></script>
+
+  <!-- ── Configuración ──────────────────────────────────────────────── -->
+  <script src="js/config/app-config.js"></script>
+  <script src="js/config/ad-config.js"></script>
+
+  <!-- ── Módulos ─────────────────────────────────────────────────────── -->
+  <script src="js/modules/qr-scanner.js"></script>
+  <script src="js/modules/global-ad-ticker.js"></script>
+  <script src="js/modules/global-ad-manager.js"></script>
+
+  <!-- ── Pantalla ───────────────────────────────────────────────────── -->
+  <script src="js/screens/main-menu.js"></script>
+
+  <!-- ── Selector de usuario (reemplaza el campo de texto libre) ─────── -->
+  <script src="js/modules/user-selector.js"></script>
+
+  <!-- cordova.js lo inyecta el build de Cordova; en navegador no existe y se ignora -->
+  <script src="cordova.js"></script>
+</body>
+</html>
