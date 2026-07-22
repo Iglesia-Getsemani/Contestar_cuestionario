@@ -21,15 +21,12 @@
 
     <main class="content">
 
-      <!-- ── URL del servidor + botón QR ─────────────────────────── -->
-      <div class="field">
-        <label for="server-url">URL del Servidor</label>
-        <div class="input-row">
-          <input id="server-url" class="input" type="url" inputmode="url" autocorrect="off"
-                 autocapitalize="off" placeholder="http://192.168.1.XXX:3000">
-          <button id="btn-scan-qr" class="input-icon-btn" title="Escanear QR">&#128247;</button>
-        </div>
-      </div>
+      <!-- ── URL del servidor: fija, oculta al usuario ─────────────
+           La app trabaja exclusivamente con la API de Cuestionarios.
+           El input se mantiene en el DOM (oculto) para no romper
+           código existente que lea su valor (api.js, main-menu.js, etc). -->
+      <input id="server-url" type="hidden" value="https://api-cuestionarios.daniel-albarracin300.workers.dev">
+      <button id="btn-scan-qr" style="display:none"></button>
 
       <!-- ── Usuario seleccionado (ya no se escribe, se elige) ─────── -->
       <div class="field">
@@ -90,6 +87,22 @@
     .usersel-empty{display:none;text-align:center;color:#9ca3af;padding:1.5rem .5rem .5rem;}
     .usersel-empty p{margin-bottom:.75rem;font-size:.9rem;}
   </style>
+
+  <!-- ── URL de la API fija (Worker de Cloudflare) ───────────────────
+       Se fija ANTES de cargar cualquier módulo, cubriendo tanto
+       lectura por input#server-url como por localStorage/variable
+       global, según lo que use cada script. -->
+  <script>
+    (function () {
+      var API_URL = 'https://api-cuestionarios.daniel-albarracin300.workers.dev';
+      window.API_BASE_URL = API_URL;
+      window.SERVER_URL = API_URL;
+      try {
+        localStorage.setItem('server-url', API_URL);
+        localStorage.setItem('serverUrl', API_URL);
+      } catch (e) { /* almacenamiento no disponible */ }
+    })();
+  </script>
 
   <!-- ── Núcleo ─────────────────────────────────────────────────────── -->
   <script src="js/core/utils.js"></script>
