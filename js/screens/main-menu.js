@@ -106,12 +106,18 @@
   }
 
   // ── Descargar cuestionario ──────────────────────────────────────────
-  function downloadQuestionnaire(name) {
+  function downloadQuestionnaire(id) {
     const serverUrl = global.Utils.normalizeUrl(els.serverUrl.value);
-    global.UI.showLoading(`Descargando ${name}...`);
+    global.UI.showLoading('Descargando cuestionario...');
 
-    global.Api.downloadQuestionnaire(serverUrl, name)
-      .then(({ name: cleanName, data }) => global.Storage.saveQuestionnaire(cleanName, data))
+    global.Api.downloadQuestionnaire(serverUrl, id)
+      .then(({ id: cuestionarioId, data }) => {
+        // Se guarda con el id como nombre de archivo local (único y seguro),
+        // y se incrusta cuestionario_id en los datos para poder subir la
+        // respuesta más adelante contra /cuestionarios/{id}/intentos.
+        const localData = { ...data, cuestionario_id: cuestionarioId };
+        return global.Storage.saveQuestionnaire(`${cuestionarioId}.json`, localData);
+      })
       .then(() => {
         renderStatus('Cuestionario descargado exitosamente', false);
         return refreshLocalQuestionnairesCount();
@@ -228,8 +234,8 @@
       <div class="section-title">Cuestionarios disponibles en el servidor</div>
       ${availableQuestionnaires.map((q) => `
         <div class="list-item">
-          <span class="list-item__title">${global.Utils.escapeHtml(global.Utils.stripJsonExt(q))}</span>
-          <button class="btn btn--accent btn--sm" data-download="${global.Utils.escapeHtml(q)}">Descargar</button>
+          <span class="list-item__title">${global.Utils.escapeHtml(q.nombre || '(sin nombre)')}</span>
+          <button class="btn btn--accent btn--sm" data-download="${global.Utils.escapeHtml(q.id)}">Descargar</button>
         </div>
       `).join('')}`;
 

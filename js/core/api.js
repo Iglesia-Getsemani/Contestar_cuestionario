@@ -36,7 +36,7 @@
     }
   }
 
-  /** GET {serverUrl}/cuestionarios -> lista de nombres de archivo .json */
+  /** GET {serverUrl}/cuestionarios -> lista de objetos {id, nombre, descripcion, asignatura, denominacion_id, institucion_id, activo, created_at} */
   function listQuestionnaires(serverUrl) {
     const url = `${serverUrl}/cuestionarios`;
     return withTimeout(
@@ -44,36 +44,45 @@
       DEFAULT_TIMEOUT_MS
     ).then(async (res) => {
       if (!res.ok) throw new ApiHttpError(res.status, await res.text().catch(() => ''));
-      const files = await res.json();
-      return files
-        .map(String)
-        .filter((f) => f.toLowerCase().endsWith('.json'));
+      const cuestionarios = await res.json();
+      // El servidor devuelve filas de la tabla "cuestionarios" (objetos con id/nombre/...),
+      // NO nombres de archivo .json — no filtrar por extensión aquí.
+      return Array.isArray(cuestionarios) ? cuestionarios : [];
     });
   }
 
-  /** GET {serverUrl}/cuestionarios/{name} -> contenido JSON del cuestionario */
-  function downloadQuestionnaire(serverUrl, name) {
-    const cleanName = name.endsWith('.json') ? name : `${name}.json`;
-    const url = `${serverUrl}/cuestionarios/${encodeURIComponent(cleanName)}`;
+  /** GET {serverUrl}/cuestionarios/{id} -> cuestionario completo (metadata + preguntas + opciones) */
+  function downloadQuestionnaire(serverUrl, id) {
+    const url = `${serverUrl}/cuestionarios/${encodeURIComponent(id)}`;
     return withTimeout(
       fetch(url, { headers: { Accept: 'application/json' } }),
       DEFAULT_TIMEOUT_MS
     ).then(async (res) => {
       if (!res.ok) throw new ApiHttpError(res.status, await res.text().catch(() => ''));
-      return { name: cleanName, data: await res.json() };
+      const data = await res.json();
+      return { id, name: data.nombre, data };
     });
   }
 
-  /** POST {serverUrl}/respuestas con el contenido crudo de la respuesta */
-  function uploadAnswer(serverUrl, answerJsonString) {
-    const url = `${serverUrl}/respuestas`;
+  /** POST {serverUrl}/cuestionarios/{cuestionarioId}/intentos
+   *  Espera: { codigo, es_simulacro, intento_numero, respuestas: [{pregunta_id, respuesta_usuario, tiempo_respuesta}] }
+   *  OJO: este endpoint es distinto al que llamaba antes esta función (/respuestas ya no existe
+   *  en el worker actual). answerData debe traer al menos cuestionario_id y codigo; revisa dónde
+   *  se genera el JSON de respuesta local para asegurarte de que tenga esa forma.
+   */
+  function uploadAnswer(serverUrl, answerData) {
+    const parsed = typeof answerData === 'string' ? JSON.parse(answerData) : answerData;
+    if (!parsed.cuestionario_id) {
+      return Promise.reject(new Error('La respuesta local no tiene cuestionario_id; no se puede subir con el servidor actual.'));
+    }
+    const url = `${serverUrl}/cuestionarios/${encodeURIComponent(parsed.cuestionario_id)}/intentos`;
     return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: answerJsonString
+      body: JSON.stringify(parsed)
     }).then(async (res) => {
       if (!res.ok) throw new ApiHttpError(res.status, await res.text().catch(() => ''));
-      return res;
+      return res.json();
     });
   }
 
